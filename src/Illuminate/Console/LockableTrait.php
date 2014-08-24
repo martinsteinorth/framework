@@ -101,7 +101,7 @@ trait LockableTrait {
 	 */
 	private function getLockfilePathname($name)
 	{
-		// TODO: Sanitize name and remove common special characters
-		return storage_path() . '/' . strtolower(str_replace(':', '', $name)) . '.lock';
+		$lockname = preg_replace('/[^A-Za-z0-9]/', '', $name);
+		return storage_path() . '/' . $lockname . '.lock';
 	}
 }
