@@ -11,6 +11,8 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class Command extends \Symfony\Component\Console\Command\Command {
 
+	use LockableTrait;
+
 	/**
 	 * The Laravel application instance.
 	 *
@@ -45,6 +47,13 @@ class Command extends \Symfony\Component\Console\Command\Command {
 	 * @var string
 	 */
 	protected $description;
+
+	/**
+	 * Lock the command during execution.
+	 *
+	 * @var boolean
+	 */
+	protected $locking = false;
 
 	/**
 	 * Create a new console command instance.
@@ -97,7 +106,18 @@ class Command extends \Symfony\Component\Console\Command\Command {
 
 		$this->output = $output;
 
-		return parent::run($input, $output);
+		if ($this->locking)
+		{
+			$code = $this->performLocked($this->getName(), function() use ($input, $output) {
+				return parent::run($input, $output);
+			}, $output);
+		}
+		else
+		{
+			$code = parent::run($input, $output);
+		}
+
+		return $code;
 	}
 
 	/**
@@ -381,4 +401,19 @@ class Command extends \Symfony\Component\Console\Command\Command {
 		$this->laravel = $laravel;
 	}
 
+	/**
+	 * @param boolean $locking
+	 */
+	public function setLocking($locking)
+	{
+		$this->locking = $locking;
+	}
+
+	/**
+	 * @return boolean
+	 */
+	public function getLocking()
+	{
+		return $this->locking;
+	}
 }

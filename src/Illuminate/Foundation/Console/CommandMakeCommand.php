@@ -89,6 +89,8 @@ class CommandMakeCommand extends Command {
 			$stub = str_replace('command:name', $this->option('command'), $stub);
 		}
 
+		$stub = $this->addLocking($stub);
+
 		return $this->addNamespace($stub);
 	}
 
@@ -107,6 +109,26 @@ class CommandMakeCommand extends Command {
 		else
 		{
 			return str_replace('{{namespace}}', '', $stub);
+		}
+	}
+
+	/**
+	 * Add the locking information to the command.
+	 *
+	 * @param  string  $stub
+	 * @return string
+	 */
+	protected function addLocking($stub)
+	{
+		$locking = $this->input->getOption('locking');
+
+		if (!is_null($locking) && (boolean) $locking === true)
+		{
+			return str_replace('{{locking}}', 'true', $stub);
+		}
+		else
+		{
+			return str_replace('{{locking}}', 'false', $stub);
 		}
 	}
 
@@ -154,6 +176,8 @@ class CommandMakeCommand extends Command {
 			array('path', null, InputOption::VALUE_OPTIONAL, 'The path where the command should be stored.', null),
 
 			array('namespace', null, InputOption::VALUE_OPTIONAL, 'The command namespace.', null),
+
+			array('locking', null, InputOption::VALUE_NONE, 'Defines whether the command can only be executed once at a time.', null)
 		);
 	}
 

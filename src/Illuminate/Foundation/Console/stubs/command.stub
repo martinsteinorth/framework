@@ -21,6 +21,13 @@ class {{class}} extends Command {
 	protected $description = 'Command description.';
 
 	/**
+	 * Lock the command during execution.
+	 *
+	 * @var boolean
+	 */
+	protected $locking = {{locking}};
+
+	/**
 	 * Create a new command instance.
 	 *
 	 * @return void
