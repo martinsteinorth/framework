@@ -1,25 +1,32 @@
 <?php namespace Illuminate\Console;
 
-use Illuminate\Console\Command;
 use Symfony\Component\Console\Output\OutputInterface;
 
 trait LockableTrait {
 
 	/**
+	 * The output interface implementation.
+	 *
 	 * @var \Symfony\Component\Console\Output\OutputInterface
 	 */
 	private $_output = null;
 
 	/**
+	 * The absolute Pathname to the lockfile
+	 *
 	 * @var String
 	 */
 	private $_lockfilePathname = null;
 
 	/**
+	 * Performs the given callback inside a locked state, so no parallel executions
+	 * with the same name are allowed.
+	 *
 	 * @param $name
 	 * @param $callback
 	 * @param OutputInterface $output
 	 * @return mixed
+	 * @throws \Exception
 	 */
 	public function performLocked($name, $callback, OutputInterface $output = null)
 	{
@@ -50,10 +57,8 @@ trait LockableTrait {
 	}
 
 	/**
-	 * Check if a lock file exists and sets a new one if not existing
+	 * Checks if a lock file exists and sets a new one if not existing
 	 *
-	 * @param  string    $warning
-	 * @param  \Closure  $callback
 	 * @return bool
 	 */
 	private function assertLockState()
@@ -78,7 +83,7 @@ trait LockableTrait {
 	/**
 	 * Removes the lockfile if set
 	 *
-	 * @param Command $command
+	 * @return void
 	 */
 	private function clearLockState()
 	{
@@ -91,7 +96,7 @@ trait LockableTrait {
 	/**
 	 * Returns the absolute pathname to the lockfile for the current command
 	 *
-	 * @param Command $command
+	 * @param $name
 	 * @return string
 	 */
 	private function getLockfilePathname($name)
