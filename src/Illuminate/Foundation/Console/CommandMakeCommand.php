@@ -106,10 +106,8 @@ class CommandMakeCommand extends Command {
 		{
 			return str_replace('{{namespace}}', ' namespace '.$namespace.';', $stub);
 		}
-		else
-		{
-			return str_replace('{{namespace}}', '', $stub);
-		}
+
+		return str_replace('{{namespace}}', '', $stub);
 	}
 
 	/**
@@ -145,10 +143,8 @@ class CommandMakeCommand extends Command {
 		{
 			return $this->laravel['path'].'/commands';
 		}
-		else
-		{
-			return $this->laravel['path.base'].'/'.$path;
-		}
+
+		return $this->laravel['path.base'].'/'.$path;
 	}
 
 	/**

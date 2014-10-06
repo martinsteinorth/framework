@@ -117,6 +117,17 @@ class ValidationValidatorTest extends PHPUnit_Framework_TestCase {
 		$v->messages()->setFormat(':message');
 		$this->assertEquals('Name is required!', $v->messages()->first('name'));
 
+		//set customAttributes by setter
+		$trans = $this->getRealTranslator();
+		$trans->addResource('array', array('validation.required' => ':attribute is required!'), 'en', 'messages');
+		$customAttributes = array('name' => 'Name');
+		$v = new Validator($trans, array('name' => ''), array('name' => 'Required'));
+		$v->addCustomAttributes($customAttributes);
+		$this->assertFalse($v->passes());
+		$v->messages()->setFormat(':message');
+		$this->assertEquals('Name is required!', $v->messages()->first('name'));
+
+
 		$trans = $this->getRealTranslator();
 		$trans->addResource('array', array('validation.required' => ':attribute is required!'), 'en', 'messages');
 		$v = new Validator($trans, array('name' => ''), array('name' => 'Required'));
@@ -148,6 +159,37 @@ class ValidationValidatorTest extends PHPUnit_Framework_TestCase {
 		$v->messages()->setFormat(':message');
 		$this->assertEquals('type must be included in Short, Long.', $v->messages()->first('type'));
 
+		// test addCustomValues
+		$trans = $this->getRealTranslator();
+		$trans->addResource('array', array('validation.in' => ':attribute must be included in :values.'), 'en', 'messages');
+		$customValues = array(
+				 'type' =>
+					array(
+					 '5'   => 'Short',
+					 '300' => 'Long',
+					)
+				);
+		$v = new Validator($trans, array('type' => '4'), array('type' => 'in:5,300'));
+		$v->addCustomValues($customValues);
+		$this->assertFalse($v->passes());
+		$v->messages()->setFormat(':message');
+		$this->assertEquals('type must be included in Short, Long.', $v->messages()->first('type'));
+
+		// set custom values by setter
+		$trans = $this->getRealTranslator();
+		$trans->addResource('array', array('validation.in' => ':attribute must be included in :values.'), 'en', 'messages');
+		$customValues = array(
+				 'type' =>
+					array(
+					 '5'   => 'Short',
+					 '300' => 'Long',
+					)
+				);
+		$v = new Validator($trans, array('type' => '4'), array('type' => 'in:5,300'));
+		$v->setValueNames($customValues);
+		$this->assertFalse($v->passes());
+		$v->messages()->setFormat(':message');
+		$this->assertEquals('type must be included in Short, Long.', $v->messages()->first('type'));
 	}
 
 
@@ -389,6 +431,13 @@ class ValidationValidatorTest extends PHPUnit_Framework_TestCase {
 		$trans = $this->getRealTranslator();
 		$v = new Validator($trans, array('first' => 'dayle', 'last' => 'rees'), array('last' => 'required_if:first,taylor,dayle'));
 		$this->assertTrue($v->passes());
+
+		// error message when passed multiple values (required_if:foo,bar,baz)
+		$trans = $this->getRealTranslator();
+		$trans->addResource('array', array('validation.required_if' => 'The :attribute field is required when :other is :value.'), 'en', 'messages');
+		$v = new Validator($trans, array('first' => 'dayle', 'last' => ''), array('last' => 'RequiredIf:first,taylor,dayle'));
+		$this->assertFalse($v->passes());
+		$this->assertEquals('The last field is required when first is dayle.', $v->messages()->first('last'));
 	}
 
 
@@ -475,42 +524,42 @@ class ValidationValidatorTest extends PHPUnit_Framework_TestCase {
 	}
 
 
-    public function testValidateBoolean()
-    {
-        $trans = $this->getRealTranslator();
-        $v = new Validator($trans, array('foo' => 'no'), array('foo' => 'Boolean'));
-        $this->assertFalse($v->passes());
+	public function testValidateBoolean()
+	{
+		$trans = $this->getRealTranslator();
+		$v = new Validator($trans, array('foo' => 'no'), array('foo' => 'Boolean'));
+		$this->assertFalse($v->passes());
 
-        $v = new Validator($trans, array('foo' => 'yes'), array('foo' => 'Boolean'));
-        $this->assertFalse($v->passes());
+		$v = new Validator($trans, array('foo' => 'yes'), array('foo' => 'Boolean'));
+		$this->assertFalse($v->passes());
 
-        $v = new Validator($trans, array('foo' => 'false'), array('foo' => 'Boolean'));
-        $this->assertFalse($v->passes());
+		$v = new Validator($trans, array('foo' => 'false'), array('foo' => 'Boolean'));
+		$this->assertFalse($v->passes());
 
-        $v = new Validator($trans, array('foo' => 'true'), array('foo' => 'Boolean'));
-        $this->assertFalse($v->passes());
+		$v = new Validator($trans, array('foo' => 'true'), array('foo' => 'Boolean'));
+		$this->assertFalse($v->passes());
 
-        $v = new Validator($trans, array(), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array(), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => false), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array('foo' => false), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => true), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array('foo' => true), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => '1'), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array('foo' => '1'), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => 1), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array('foo' => 1), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => '0'), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
+		$v = new Validator($trans, array('foo' => '0'), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
 
-        $v = new Validator($trans, array('foo' => 0), array('foo' => 'Boolean'));
-        $this->assertTrue($v->passes());
-    }
+		$v = new Validator($trans, array('foo' => 0), array('foo' => 'Boolean'));
+		$this->assertTrue($v->passes());
+	}
 
 
 	public function testValidateNumeric()
@@ -925,6 +974,23 @@ class ValidationValidatorTest extends PHPUnit_Framework_TestCase {
 		$this->assertFalse($v->passes());
 	}
 
+
+	public function testEmptyRulesSkipped()
+	{
+		$trans = $this->getRealTranslator();
+		$v = new Validator($trans, array('x' => 'aslsdlks'), array('x' => array('alpha', array(), '')));
+		$this->assertTrue($v->passes());
+
+		$v = new Validator($trans, array('x' => 'aslsdlks'), array('x' => '|||required|'));
+		$this->assertTrue($v->passes());
+	}
+
+	public function testAlternativeFormat()
+	{
+		$trans = $this->getRealTranslator();
+		$v = new Validator($trans, array('x' => 'aslsdlks'), array('x' => array('alpha', array('min', 3), array('max', 10))));
+		$this->assertTrue($v->passes());
+	}
 
 	public function testValidateAlpha()
 	{

@@ -1,7 +1,6 @@
 <?php
 
 use Mockery as m;
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 
 class FoundationApplicationTest extends PHPUnit_Framework_TestCase {
@@ -35,6 +34,15 @@ class FoundationApplicationTest extends PHPUnit_Framework_TestCase {
 		$app->register($provider);
 
 		$this->assertTrue(in_array($class, $app->getLoadedProviders()));
+	}
+
+
+	public function testForgetMiddleware()
+	{
+		$app = new ApplicationGetMiddlewaresStub;
+		$app->middleware('Illuminate\Http\FrameGuard');
+		$app->forgetMiddleware('Illuminate\Http\FrameGuard');
+		$this->assertEquals(0, count($app->getMiddlewares()));
 	}
 
 
@@ -134,6 +142,14 @@ class ApplicationKernelExceptionHandlerStub extends Illuminate\Foundation\Applic
 
 	protected function setExceptionHandler(Closure $handler) { return $handler; }
 
+}
+
+class ApplicationGetMiddlewaresStub extends Illuminate\Foundation\Application
+{
+	public function getMiddlewares()
+	{
+		return $this->middlewares;
+	}
 }
 
 class ApplicationDeferredSharedServiceProviderStub extends Illuminate\Support\ServiceProvider {

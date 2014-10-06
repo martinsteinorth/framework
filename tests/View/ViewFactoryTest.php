@@ -355,6 +355,22 @@ class ViewFactoryTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+	public function testExceptionsInSectionsAreThrown()
+	{
+		$engine = new \Illuminate\View\Engines\CompilerEngine(m::mock('Illuminate\View\Compilers\CompilerInterface'));
+		$engine->getCompiler()->shouldReceive('getCompiledPath')->andReturnUsing(function($path) { return $path; });
+		$engine->getCompiler()->shouldReceive('isExpired')->twice()->andReturn(false);
+		$factory = $this->getFactory();
+		$factory->getEngineResolver()->shouldReceive('resolve')->twice()->andReturn($engine);
+		$factory->getFinder()->shouldReceive('find')->once()->with('layout')->andReturn(__DIR__.'/fixtures/section-exception-layout.php');
+		$factory->getFinder()->shouldReceive('find')->once()->with('view')->andReturn(__DIR__.'/fixtures/section-exception.php');
+		$factory->getDispatcher()->shouldReceive('fire')->times(4);
+
+		$this->setExpectedException('Exception', 'section exception message');
+		$factory->make('view')->render();
+	}
+
+
 	protected function getFactory()
 	{
 		return new Factory(
@@ -370,7 +386,7 @@ class ViewFactoryTest extends PHPUnit_Framework_TestCase {
 		return array(
 			m::mock('Illuminate\View\Engines\EngineResolver'),
 			m::mock('Illuminate\View\ViewFinderInterface'),
-			m::mock('Illuminate\Events\Dispatcher')
+			m::mock('Illuminate\Events\Dispatcher'),
 		);
 	}
 

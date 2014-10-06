@@ -13,7 +13,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 	public function testSessionIsLoadedFromHandler()
 	{
 		$session = $this->getSession();
-		$session->getHandler()->shouldReceive('read')->once()->with(1)->andReturn(serialize(array('foo' => 'bar', 'bagged' => array('name' => 'taylor'))));
+		$session->getHandler()->shouldReceive('read')->once()->with($this->getSessionId())->andReturn(serialize(array('foo' => 'bar', 'bagged' => array('name' => 'taylor'))));
 		$session->registerBag(new Symfony\Component\HttpFoundation\Session\Attribute\AttributeBag('bagged'));
 		$session->start();
 
@@ -44,14 +44,14 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$oldId = $session->getId();
 		$session->getHandler()->shouldReceive('destroy')->never();
 		$this->assertTrue($session->migrate());
-		$this->assertFalse($oldId == $session->getId());
+		$this->assertNotEquals($oldId, $session->getId());
 
 
 		$session = $this->getSession();
 		$oldId = $session->getId();
 		$session->getHandler()->shouldReceive('destroy')->once()->with($oldId);
 		$this->assertTrue($session->migrate(true));
-		$this->assertFalse($oldId == $session->getId());
+		$this->assertNotEquals($oldId, $session->getId());
 	}
 
 
@@ -61,7 +61,22 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$oldId = $session->getId();
 		$session->getHandler()->shouldReceive('destroy')->never();
 		$this->assertTrue($session->regenerate());
-		$this->assertFalse($oldId == $session->getId());
+		$this->assertNotEquals($oldId, $session->getId());
+	}
+
+
+	public function testCantSetInvalidId()
+	{
+		$session = $this->getSession();
+
+		$session->setId(null);
+		$this->assertFalse(null == $session->getId());
+
+		$session->setId(array('a'));
+		$this->assertFalse(array('a') == $session->getId());
+
+		$session->setId('wrong');
+		$this->assertFalse('wrong' == $session->getId());
 	}
 
 
@@ -70,11 +85,11 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session = $this->getSession();
 		$oldId = $session->getId();
 		$session->set('foo','bar');
-		$this->assertTrue(count($session->all()) > 0);
+		$this->assertGreaterThan(0, count($session->all()));
 		$session->getHandler()->shouldReceive('destroy')->never();
 		$this->assertTrue($session->invalidate());
-		$this->assertFalse($oldId == $session->getId());
-		$this->assertTrue(count($session->all()) == 0);
+		$this->assertNotEquals($oldId, $session->getId());
+		$this->assertCount(0, $session->all());
 	}
 
 
@@ -85,16 +100,19 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session->start();
 		$session->put('foo', 'bar');
 		$session->flash('baz', 'boom');
-		$session->getHandler()->shouldReceive('write')->once()->with(1, serialize(array(
-			'_token' => $session->token(),
-			'foo' => 'bar',
-			'baz' => 'boom',
-			'flash' => array(
-				'new' => array(),
-				'old' => array('baz'),
-			),
-			'_sf2_meta' => $session->getBagData('_sf2_meta'),
-		)));
+		$session->getHandler()->shouldReceive('write')->once()->with(
+			$this->getSessionId(),
+			serialize(array(
+				'_token' => $session->token(),
+				'foo' => 'bar',
+				'baz' => 'boom',
+				'flash' => array(
+					'new' => array(),
+					'old' => array('baz'),
+				),
+				'_sf2_meta' => $session->getBagData('_sf2_meta'),
+			))
+		);
 		$session->save();
 
 		$this->assertFalse($session->isStarted());
@@ -150,13 +168,13 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session->flash('foo', 'bar');
 		$session->set('fu', 'baz');
 		$session->set('flash.old', array('qu'));
-		$this->assertTrue(array_search('foo', $session->get('flash.new')) !== false);
-		$this->assertTrue(array_search('fu', $session->get('flash.new')) === false);
+		$this->assertNotFalse(array_search('foo', $session->get('flash.new')));
+		$this->assertFalse(array_search('fu', $session->get('flash.new')));
 		$session->keep(array('fu','qu'));
-		$this->assertTrue(array_search('foo', $session->get('flash.new')) !== false);
-		$this->assertTrue(array_search('fu', $session->get('flash.new')) !== false);
-		$this->assertTrue(array_search('qu', $session->get('flash.new')) !== false);
-		$this->assertTrue(array_search('qu', $session->get('flash.old')) === false);
+		$this->assertNotFalse(array_search('foo', $session->get('flash.new')));
+		$this->assertNotFalse(array_search('fu', $session->get('flash.new')));
+		$this->assertNotFalse(array_search('qu', $session->get('flash.new')));
+		$this->assertFalse(array_search('qu', $session->get('flash.old')));
 	}
 
 
@@ -166,8 +184,8 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session->flash('foo', 'bar');
 		$session->set('flash.old', array('foo'));
 		$session->reflash();
-		$this->assertTrue(array_search('foo', $session->get('flash.new')) !== false);
-		$this->assertTrue(array_search('foo', $session->get('flash.old')) === false);
+		$this->assertNotFalse(array_search('foo', $session->get('flash.new')));
+		$this->assertFalse(array_search('foo', $session->get('flash.old')));
 	}
 
 
@@ -176,9 +194,9 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session = $this->getSession();
 		$session->set('foo', 'bar');
 		$session->set('qu', 'ux');
-		$session->replace(array('foo'=>'baz'));
-		$this->assertTrue($session->get('foo') == 'baz');
-		$this->assertTrue($session->get('qu') == 'ux');
+		$session->replace(array('foo' => 'baz'));
+		$this->assertEquals('baz', $session->get('foo'));
+		$this->assertEquals('ux', $session->get('qu'));
 	}
 
 
@@ -188,7 +206,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session->set('foo', 'bar');
 		$pulled = $session->remove('foo');
 		$this->assertFalse($session->has('foo'));
-		$this->assertTrue($pulled == 'bar');
+		$this->assertEquals('bar', $pulled);
 	}
 
 
@@ -242,7 +260,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 	public function testToken()
 	{
 		$session = $this->getSession();
-		$this->assertTrue($session->token() == $session->getToken());
+		$this->assertEquals($session->token(), $session->getToken());
 	}
 
 
@@ -276,8 +294,14 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		return array(
 			$this->getSessionName(),
 			m::mock('SessionHandlerInterface'),
-			'1'
+			$this->getSessionId(),
 		);
+	}
+
+
+	public function getSessionId()
+	{
+		return 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 	}
 
 

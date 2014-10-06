@@ -13,14 +13,17 @@ class AuthDatabaseReminderRepositoryTest extends PHPUnit_Framework_TestCase {
 	public function testCreateInsertsNewRecordIntoTable()
 	{
 		$repo = $this->getRepo();
-		$repo->getConnection()->shouldReceive('table')->once()->with('table')->andReturn($query = m::mock('StdClass'));
+		$repo->getConnection()->shouldReceive('table')->with('table')->andReturn($query = m::mock('StdClass'));
+		$query->shouldReceive('where')->with('email', 'email')->andReturn($query);
+		$query->shouldReceive('delete')->once();
 		$query->shouldReceive('insert')->once();
 		$user = m::mock('Illuminate\Auth\Reminders\RemindableInterface');
 		$user->shouldReceive('getReminderEmail')->andReturn('email');
 
 		$results = $repo->create($user);
 
-		$this->assertTrue(is_string($results) and strlen($results) > 1);
+		$this->assertInternalType('string', $results);
+		$this->assertGreaterThan(1, strlen($results));
 	}
 
 

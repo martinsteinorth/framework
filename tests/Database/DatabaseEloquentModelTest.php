@@ -32,10 +32,17 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 
 	public function testDirtyAttributes()
 	{
-		$model = new EloquentModelStub(array('foo' => '1'));
+		$model = new EloquentModelStub(array('foo' => '1', 'bar' => 2, 'baz' => 3));
 		$model->syncOriginal();
 		$model->foo = 1;
+		$model->bar = 20;
+		$model->baz = 30;
+
+		$this->assertTrue($model->isDirty());
 		$this->assertFalse($model->isDirty('foo'));
+		$this->assertTrue($model->isDirty('bar'));
+		$this->assertTrue($model->isDirty('foo', 'bar'));
+		$this->assertTrue($model->isDirty(['foo', 'bar']));
 	}
 
 
@@ -635,7 +642,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$relation = $model->hasOne('EloquentModelSaveStub', 'foo');
 		$this->assertEquals('save_stub.foo', $relation->getForeignKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 	}
 
 
@@ -662,7 +669,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$relation = $model->hasMany('EloquentModelSaveStub', 'foo');
 		$this->assertEquals('save_stub.foo', $relation->getForeignKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 	}
 
 
@@ -684,7 +691,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$relation = $model->belongsToStub();
 		$this->assertEquals('belongs_to_stub_id', $relation->getForeignKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 
 		$model = new EloquentModelStub;
 		$this->addMockConnection($model);
@@ -700,7 +707,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$relation = $model->morphToStub();
 		$this->assertEquals('morph_to_stub_id', $relation->getForeignKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 	}
 
 
@@ -712,7 +719,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals('eloquent_model_save_stub_eloquent_model_stub.eloquent_model_stub_id', $relation->getForeignKey());
 		$this->assertEquals('eloquent_model_save_stub_eloquent_model_stub.eloquent_model_save_stub_id', $relation->getOtherKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 		$this->assertEquals(__FUNCTION__, $relation->getRelationName());
 
 		$model = new EloquentModelStub;
@@ -721,7 +728,7 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals('table.foreign', $relation->getForeignKey());
 		$this->assertEquals('table.other', $relation->getOtherKey());
 		$this->assertSame($model, $relation->getParent());
-		$this->assertTrue($relation->getQuery()->getModel() instanceof EloquentModelSaveStub);
+		$this->assertInstanceOf('EloquentModelSaveStub', $relation->getQuery()->getModel());
 	}
 
 
@@ -775,6 +782,53 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 		$events->shouldReceive('forget');
 		EloquentModelStub::observe(new EloquentTestObserverStub);
 		EloquentModelStub::flushEventListeners();
+	}
+
+
+	public function testSetObservableEvents()
+	{
+		$class = new EloquentModelStub;
+		$class->setObservableEvents(array('foo'));
+
+		$this->assertContains('foo', $class->getObservableEvents());
+	}
+
+
+	public function testAddObservableEvent()
+	{
+		$class = new EloquentModelStub;
+		$class->addObservableEvents('foo');
+
+		$this->assertContains('foo', $class->getObservableEvents());
+	}
+
+	public function testAddMultipleObserveableEvents()
+	{
+		$class = new EloquentModelStub;
+		$class->addObservableEvents('foo', 'bar');
+
+		$this->assertContains('foo', $class->getObservableEvents());
+		$this->assertContains('bar', $class->getObservableEvents());
+	}
+
+
+	public function testRemoveObservableEvent()
+	{
+		$class = new EloquentModelStub;
+		$class->setObservableEvents(array('foo', 'bar'));
+		$class->removeObservableEvents('bar');
+
+		$this->assertNotContains('bar', $class->getObservableEvents());
+	}
+
+	public function testRemoveMultipleObservableEvents()
+	{
+		$class = new EloquentModelStub;
+		$class->setObservableEvents(array('foo', 'bar'));
+		$class->removeObservableEvents('foo', 'bar');
+
+		$this->assertNotContains('foo', $class->getObservableEvents());
+		$this->assertNotContains('bar', $class->getObservableEvents());
 	}
 
 
@@ -847,6 +901,56 @@ class DatabaseEloquentModelTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertEquals(3, $model->foo);
 		$this->assertFalse($model->isDirty());
+	}
+
+	public function testRelationshipTouchOwnersIsPropagated()
+	{
+		$relation = $this->getMockBuilder('Illuminate\Database\Eloquent\Relations\BelongsTo')->setMethods(array('touch'))->disableOriginalConstructor()->getMock();
+		$relation->expects($this->once())->method('touch');
+
+		$model = m::mock('EloquentModelStub[partner]');
+		$this->addMockConnection($model);
+		$model->shouldReceive('partner')->once()->andReturn($relation);
+		$model->setTouchedRelations(['partner']);
+
+		$mockPartnerModel = m::mock('EloquentModelStub[touchOwners]');
+		$mockPartnerModel->shouldReceive('touchOwners')->once();
+		$model->setRelation('partner', $mockPartnerModel);
+
+		$model->touchOwners();
+	}
+
+
+	public function testRelationshipTouchOwnersIsNotPropagatedIfNoRelationshipResult()
+	{
+		$relation = $this->getMockBuilder('Illuminate\Database\Eloquent\Relations\BelongsTo')->setMethods(array('touch'))->disableOriginalConstructor()->getMock();
+		$relation->expects($this->once())->method('touch');
+
+		$model = m::mock('EloquentModelStub[partner]');
+		$this->addMockConnection($model);
+		$model->shouldReceive('partner')->once()->andReturn($relation);
+		$model->setTouchedRelations(['partner']);
+
+		$model->setRelation('partner', null);
+
+		$model->touchOwners();
+	}
+
+
+	public function testTimestampsAreNotUpdatedWithTimestampsFalseSaveOption()
+	{
+		$model = m::mock('EloquentModelStub[newQuery]');
+		$query = m::mock('Illuminate\Database\Eloquent\Builder');
+		$query->shouldReceive('where')->once()->with('id', '=', 1);
+		$query->shouldReceive('update')->once()->with(array('name' => 'taylor'));
+		$model->shouldReceive('newQuery')->once()->andReturn($query);
+
+		$model->id = 1;
+		$model->syncOriginal();
+		$model->name = 'taylor';
+		$model->exists = true;
+		$this->assertTrue($model->save(['timestamps' => false]));
+		$this->assertNull($model->updated_at);
 	}
 
 

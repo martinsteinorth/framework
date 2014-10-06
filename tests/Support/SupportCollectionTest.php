@@ -183,6 +183,13 @@ class SupportCollectionTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+	public function testCollapseWithNestedCollactions()
+	{
+		$data = new Collection([new Collection([1, 2, 3]), new Collection([4, 5, 6])]);
+		$this->assertEquals([1, 2, 3, 4, 5, 6], $data->collapse()->all());
+	}
+
+
 	public function testSort()
 	{
 		$data = new Collection(array(5, 3, 1, 2, 4));
@@ -286,6 +293,14 @@ class SupportCollectionTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+	public function testRandomOnEmpty()
+	{
+		$data = new Collection();
+		$random = $data->random();
+		$this->assertNull($random);
+	}
+
+
 	public function testTakeLast()
 	{
 		$data = new Collection(array('taylor', 'dayle', 'shawn'));
@@ -362,9 +377,13 @@ class SupportCollectionTest extends PHPUnit_Framework_TestCase {
 
 	public function testGroupByAttribute()
 	{
-		$data = new Collection(array(array('rating' => 1, 'name' => '1'), array('rating' => 1, 'name' => '2'), array('rating' => 2, 'name' => '3')));
+		$data = new Collection(array(array('rating' => 1, 'url' => '1'), array('rating' => 1, 'url' => '1'), array('rating' => 2, 'url' => '2')));
+
 		$result = $data->groupBy('rating');
-		$this->assertEquals(array(1 => array(array('rating' => 1, 'name' => '1'), array('rating' => 1, 'name' => '2')), 2 => array(array('rating' => 2, 'name' => '3'))), $result->toArray());
+		$this->assertEquals(array(1 => array(array('rating' => 1, 'url' => '1'), array('rating' => 1, 'url' => '1')), 2 => array(array('rating' => 2, 'url' => '2'))), $result->toArray());
+
+		$result = $data->groupBy('url');
+		$this->assertEquals(array(1 => array(array('rating' => 1, 'url' => '1'), array('rating' => 1, 'url' => '1')), 2 => array(array('rating' => 2, 'url' => '2'))), $result->toArray());
 	}
 
 
@@ -380,10 +399,10 @@ class SupportCollectionTest extends PHPUnit_Framework_TestCase {
 	{
 		$c = new Collection([1, 3, 5]);
 
-		$this->assertEquals(true,  $c->contains(1));
-		$this->assertEquals(false, $c->contains(2));
-		$this->assertEquals(true,  $c->contains(function($value) { return $value < 5; }));
-		$this->assertEquals(false, $c->contains(function($value) { return $value > 5; }));
+		$this->assertTrue($c->contains(1));
+		$this->assertFalse($c->contains(2));
+		$this->assertTrue($c->contains(function($value) { return $value < 5; }));
+		$this->assertFalse($c->contains(function($value) { return $value > 5; }));
 	}
 
 

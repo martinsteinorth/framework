@@ -77,7 +77,7 @@ class Builder {
 			return $this->findMany($id, $columns);
 		}
 
-		$this->query->where($this->model->getKeyName(), '=', $id);
+		$this->query->where($this->model->getQualifiedKeyName(), '=', $id);
 
 		return $this->first($columns);
 	}
@@ -93,10 +93,10 @@ class Builder {
 	{
 		if (empty($id)) return $this->model->newCollection();
 
-		$this->query->whereIn($this->model->getKeyName(), $id);
+		$this->query->whereIn($this->model->getQualifiedKeyName(), $id);
 
 		return $this->get($columns);
-    }
+	}
 
 	/**
 	 * Find a model by its primary key or throw an exception.
@@ -105,7 +105,7 @@ class Builder {
 	 * @param  array  $columns
 	 * @return \Illuminate\Database\Eloquent\Model|static
 	 *
-	 * @throws ModelNotFoundException
+	 * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
 	 */
 	public function findOrFail($id, $columns = array('*'))
 	{
@@ -131,7 +131,7 @@ class Builder {
 	 * @param  array  $columns
 	 * @return \Illuminate\Database\Eloquent\Model|static
 	 *
-	 * @throws ModelNotFoundException
+	 * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
 	 */
 	public function firstOrFail($columns = array('*'))
 	{
@@ -242,10 +242,8 @@ class Builder {
 		{
 			return $this->groupedPaginate($paginator, $perPage, $columns);
 		}
-		else
-		{
-			return $this->ungroupedPaginate($paginator, $perPage, $columns);
-		}
+
+		return $this->ungroupedPaginate($paginator, $perPage, $columns);
 	}
 
 	/**
@@ -374,10 +372,8 @@ class Builder {
 		{
 			return call_user_func($this->onDelete, $this);
 		}
-		else
-		{
-			return $this->query->delete();
-		}
+
+		return $this->query->delete();
 	}
 
 	/**
@@ -908,10 +904,8 @@ class Builder {
 		{
 			return $this->callScope($scope, $parameters);
 		}
-		else
-		{
-			$result = call_user_func_array(array($this->query, $method), $parameters);
-		}
+
+		$result = call_user_func_array(array($this->query, $method), $parameters);
 
 		return in_array($method, $this->passthru) ? $result : $this;
 	}

@@ -47,6 +47,11 @@ class SupportHelpersTest extends PHPUnit_Framework_TestCase {
 		$this->assertFalse(isset($array['names']['developer']));
 		$this->assertFalse(isset($array['names']['otherDeveloper']));
 		$this->assertTrue(isset($array['names']['thirdDeveloper']));
+
+		$array = ['names' => ['developer' => 'taylor', 'otherDeveloper' => 'dayle'], 'otherNames' => ['developer' => 'Lucas', 'otherDeveloper' => 'Graham']];
+		array_forget($array, ['names.developer', 'otherNames.otherDeveloper']);
+		$expected = ['names' => ['otherDeveloper' => 'dayle'], 'otherNames' => ['developer' => 'Lucas']];
+		$this->assertEquals($expected, $array);
 	}
 
 
@@ -86,6 +91,12 @@ class SupportHelpersTest extends PHPUnit_Framework_TestCase {
 	{
 		$array = array('name' => 'taylor', 'otherDeveloper' => 'dayle');
 		$this->assertEquals('dayle', array_first($array, function($key, $value) { return $value == 'dayle'; }));
+	}
+
+	public function testArrayLast()
+	{
+		$array = array(100, 250, 290, 320, 500, 560, 670);
+		$this->assertEquals(670, array_last($array, function($key, $value) { return $value > 320; }));
 	}
 
 
